@@ -7,7 +7,7 @@
 // (no flags, no build step, no install — Node 22 runs this as-is).
 
 import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
@@ -33,10 +33,17 @@ function repoRoot(): string {
 }
 
 // Copy one directory tree, but only when the source exists.
+// Hidden files (dotfiles) are never copied: the grader rejects any
+// output name that does not start with a letter, digit or underscore,
+// so a stray .gitkeep or .DS_Store in game/ or screenshots/ would fail
+// the grade run even though the dossier itself ignores dotfiles.
 function copyTree(src: string, dest: string): void {
   if (!existsSync(src)) return;
   mkdirSync(dirname(dest), { recursive: true });
-  cpSync(src, dest, { recursive: true });
+  cpSync(src, dest, {
+    recursive: true,
+    filter: (p: string) => !basename(p).startsWith('.'),
+  });
 }
 
 // The entrypoint: stage game/ + screenshots/, then write the dossier.
